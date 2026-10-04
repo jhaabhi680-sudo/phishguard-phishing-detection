@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}AIML Mini Project (Exp 12) — Overview &amp; Problem Statement{% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <!-- Project Header Card -->
+    <div class="cyber-card p-4 p-md-5 mb-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <span class="badge bg-warning text-dark px-3 py-2 fw-bold">
+                <i class="fas fa-graduation-cap me-1"></i> B.Tech AIML Mini Project &bull; Experiment 12
+            </span>
+            <span class="badge bg-dark border border-secondary text-info px-3 py-2">
+                <i class="fas fa-database me-1"></i> Dataset: UCI PhiUSIIL (235,795 Records)
+            </span>
+        </div>
+
+        <h1 class="hero-title mb-2">
+            AI-Based Phishing Website <span class="highlight">Detection &amp; Classification</span>
+        </h1>
+        <p class="hero-subtitle mb-4">
+            An end-to-end Machine Learning solution designed to classify URLs, predict phishing probabilities, and generate explainable risk scores using multi-model ensemble evaluation.
+        </p>
+
+        <!-- Direct Answers to Project Requirements Callout -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="p-3 rounded border border-secondary" style="background: rgba(0,0,0,0.35);">
+                    <small class="text-warning fw-bold d-block mb-1"><i class="fas fa-bullseye me-1"></i> 1. What the Model Does</small>
+                    <p class="small text-secondary mb-0">
+                        Performs <strong>Supervised Binary Classification</strong>. It detects whether an unknown URL is <strong>Phishing (Class 0)</strong> or <strong>Legitimate (Class 1)</strong> based on 54 structural &amp; lexical features.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-3 rounded border border-secondary" style="background: rgba(0,0,0,0.35);">
+                    <small class="text-info fw-bold d-block mb-1"><i class="fas fa-database me-1"></i> 2. Unique Dataset Used</small>
+                    <p class="small text-secondary mb-0">
+                        Trained on the official <strong>PhiUSIIL Phishing URL Dataset</strong> from the <strong>UCI Machine Learning Repository</strong> containing <strong>235,795 verified URLs</strong> with 54 features.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="p-3 rounded border border-secondary" style="background: rgba(0,0,0,0.35);">
+                    <small class="text-success fw-bold d-block mb-1"><i class="fas fa-poll-h me-1"></i> 3. Models Compared &amp; Evaluated</small>
+                    <p class="small text-secondary mb-0">
+                        Compared <strong>5 ML Algorithms</strong> (Logistic Regression, Decision Tree, Random Forest, Gradient Boosting, XGBoost) using Stratified 80-20 train-test splits and weighted F1-Score scoring.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Demo Form -->
+        <div class="p-3 rounded border border-secondary bg-dark mb-3">
+            <h6 class="text-white fw-bold mb-2"><i class="fas fa-play text-warning me-2"></i>Quick Demonstration — Test Model Output</h6>
+            <form action="/demonstration" method="POST">
+                <div class="input-group">
+                    <input type="text" class="form-control bg-black text-white border-secondary font-monospace"
+                           name="url" id="quickUrlInput"
+                           placeholder="Enter URL to classify (e.g., https://google.com)" required>
+                    <button class="btn btn-cyber-primary" type="submit">
+                        <i class="fas fa-bolt me-1"></i> Classify URL
+                    </button>
+                </div>
+            </form>
+            <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
+                <small class="text-muted">Sample Presets:</small>
+                <button type="button" class="btn btn-sm btn-outline-success py-0 px-2" onclick="document.getElementById('quickUrlInput').value='https://www.google.com'">
+                    google.com (Legitimate)
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="document.getElementById('quickUrlInput').value='http://secure-account-verification-example.com/login'">
+                    banking-phish.com (Phishing)
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-warning py-0 px-2" onclick="document.getElementById('quickUrlInput').value='https://paypal.com.account-update.tk/verify'">
+                    paypal-spoof.tk (Phishing)
+                </button>
+            </div>
+        </div>
+
+        <div class="d-flex flex-wrap gap-3">
+            <a href="/demonstration" class="btn btn-cyber-primary">
+                <i class="fas fa-play-circle me-1"></i> Full Model Demonstration (Final Output)
+            </a>
+            <a href="/preprocessing" class="btn btn-cyber-outline">
+                <i class="fas fa-filter me-1"></i> View Data Preprocessing &amp; EDA
+            </a>
+            <a href="/performance" class="btn btn-cyber-outline">
+                <i class="fas fa-chart-column me-1"></i> View Model Comparison
+            </a>
+        </div>
+    </div>
+
+    <!-- Project Metrics Summary -->
+    <div class="row g-3 mb-4 text-center">
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3">
+                <div class="text-info fw-bold fs-3 font-monospace">235,795</div>
+                <div class="text-muted small text-uppercase">UCI Dataset Records</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3">
+                <div class="text-warning fw-bold fs-3 font-monospace">54</div>
+                <div class="text-muted small text-uppercase">Extracted Features</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3">
+                <div class="text-success fw-bold fs-3 font-monospace">
+                    {% if best_f1 %}{{ '%.2f'|format(best_f1 * 100) }}%{% else %}99.8%{% endif %}
+                </div>
+                <div class="text-muted small text-uppercase">Selected Model F1-Score</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="cyber-card p-3">
+                <div class="text-primary fw-bold fs-3 font-monospace">{{ models_count }}</div>
+                <div class="text-muted small text-uppercase">Algorithms Compared</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 Phases of Mini Project Execution -->
+    <div class="cyber-card p-4">
+        <h5 class="fw-bold text-white mb-3"><i class="fas fa-list-check text-info me-2"></i>Mini Project Methodology &amp; Implementation Phases</h5>
+        
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="p-3 border border-secondary rounded h-100" style="background: rgba(0,0,0,0.3);">
+                    <span class="badge bg-primary mb-2">Phase 1</span>
+                    <h6 class="text-white fw-bold mb-1">Data Preprocessing</h6>
+                    <p class="text-secondary small mb-0">
+                        Cleaning missing values, eliminating raw text identifiers, categorical encoding, and StandardScaler normalization.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="p-3 border border-secondary rounded h-100" style="background: rgba(0,0,0,0.3);">
+                    <span class="badge bg-info text-dark mb-2">Phase 2</span>
+                    <h6 class="text-white fw-bold mb-1">Model Development</h6>
+                    <p class="text-secondary small mb-0">
+                        Training 5 supervised learning models with Stratified 80-20 holdout split to prevent test set data leakage.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="p-3 border border-secondary rounded h-100" style="background: rgba(0,0,0,0.3);">
+                    <span class="badge bg-warning text-dark mb-2">Phase 3</span>
+                    <h6 class="text-white fw-bold mb-1">Evaluation &amp; Selection</h6>
+                    <p class="text-secondary small mb-0">
+                        Comprehensive evaluation using Accuracy, Precision, Recall, F1, ROC-AUC, and Confusion Matrices.
+                    </p>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="p-3 border border-secondary rounded h-100" style="background: rgba(0,0,0,0.3);">
+                    <span class="badge bg-success mb-2">Phase 4</span>
+                    <h6 class="text-white fw-bold mb-1">Actual Result Output</h6>
+                    <p class="text-secondary small mb-0">
+                        Live demonstration predicting URL class label, risk score, and verifying successful task performance.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

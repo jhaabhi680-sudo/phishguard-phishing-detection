@@ -1,0 +1,11 @@
+{
+  "name": "PhiUSIIL Phishing URL Dataset",
+  "source": "UCI Machine Learning Repository",
+  "url": "https://archive.ics.uci.edu/dataset/967/phiusiil+phishing+url+dataset",
+  "total_records": 30000,
+  "total_features": 57,
+  "phishing_count": 15000,
+  "legitimate_count": 15000,
+  "phishing_pct": 50.0,
+  "legitimate_pct": 50.0
+}

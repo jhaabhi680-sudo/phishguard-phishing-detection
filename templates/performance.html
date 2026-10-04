@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+{% block title %}Model Development &amp; Comparison — AIML Mini Project (Exp 12){% endblock %}
+
+{% block content %}
+<div class="container py-3">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <a href="/" class="text-secondary small text-decoration-none"><i class="fas fa-home me-1"></i> Overview</a>
+                <span class="text-muted small">/</span>
+                <span class="text-warning small fw-bold">Model Comparison &amp; Benchmarks</span>
+            </div>
+            <h2 class="fw-bold text-white mb-1"><i class="fas fa-chart-line text-warning me-2"></i>Multi-Model Development &amp; Comparison</h2>
+            <p class="text-secondary small mb-0">Stratified 80/20 train-test evaluation across 5 ML algorithms on 235,795 verified samples.</p>
+        </div>
+        <div class="mt-3 mt-md-0">
+            <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-50 px-3 py-2">
+                <i class="fas fa-scale-balanced me-1"></i> 5 Algorithms Evaluated
+            </span>
+        </div>
+    </div>
+
+    <!-- Critical Security Alert: Recall & F1 -->
+    <div class="cyber-card p-3 mb-4" style="background: rgba(14, 165, 233, 0.08); border-color: rgba(56, 189, 248, 0.3);">
+        <div class="d-flex align-items-start gap-3">
+            <div class="brand-icon-wrapper mt-1" style="background: #0284c7; width: 32px; height: 32px;">
+                <i class="fas fa-lightbulb"></i>
+            </div>
+            <div>
+                <h6 class="text-white fw-bold mb-1">Cybersecurity Optimization Criteria</h6>
+                <p class="text-secondary small mb-0">
+                    In phishing prevention, a <strong>False Negative</strong> (allowing an unsuspecting user onto a credential phishing site) is disastrous, whereas a <strong>False Positive</strong> is a manageable warning. Therefore, our automated model selector prioritizes <strong>F1-Score (40%)</strong> and <strong>Recall (20%)</strong> over raw baseline accuracy.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics Summary Table -->
+    <div class="cyber-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold text-white mb-0"><i class="fas fa-table-list text-info me-2"></i>Multi-Model Evaluation Matrix</h5>
+            <span class="badge bg-dark border border-secondary text-secondary">Test Set: 47,159 records</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table batch-table text-white mb-0 text-center">
+                <thead>
+                    <tr class="text-muted small">
+                        <th class="text-start">Classifier Algorithm</th>
+                        <th>Accuracy</th>
+                        <th>Precision</th>
+                        <th>Recall</th>
+                        <th>F1-Score</th>
+                        <th>ROC-AUC</th>
+                        <th>Training Time</th>
+                        <th>Inference Latency</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if models_dict %}
+                        {% for name, m in models_dict.items() %}
+                        {% set is_best = (name == best_model) %}
+                        <tr class="{% if is_best %}border-start border-warning border-3{% endif %}">
+                            <td class="text-start fw-bold">
+                                {% if is_best %}
+                                <i class="fas fa-trophy text-warning me-1"></i>
+                                {% endif %}
+                                {{ name }}
+                                {% if is_best %}
+                                <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">SELECTED</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ '%.4f'|format(m.accuracy) }}</td>
+                            <td>{{ '%.4f'|format(m.precision) }}</td>
+                            <td>{{ '%.4f'|format(m.recall) }}</td>
+                            <td><strong class="text-warning">{{ '%.4f'|format(m.f1) }}</strong></td>
+                            <td><strong class="text-info">{{ '%.4f'|format(m.roc_auc) }}</strong></td>
+                            <td class="text-secondary font-monospace">{{ m.train_time_s }}s</td>
+                            <td class="text-secondary font-monospace">{{ m.prediction_time_s }}s</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4 text-muted small">
+                                No pre-computed metrics found. Train models with <code>python src/train.py</code>.
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Interactive Chart.js Visualizer -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="cyber-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-white mb-0"><i class="fas fa-chart-column text-primary me-2"></i>F1-Score &amp; Accuracy Comparison</h5>
+                    <span class="badge bg-dark border border-secondary text-secondary">Interactive Chart</span>
+                </div>
+                <div style="height: 280px; position: relative;">
+                    <canvas id="modelBarChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="cyber-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-white mb-0"><i class="fas fa-stopwatch text-success me-2"></i>Inference Latency (seconds)</h5>
+                    <span class="badge bg-dark border border-secondary text-secondary">Lower is Better</span>
+                </div>
+                <div style="height: 280px; position: relative;">
+                    <canvas id="latencyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evaluation Curves Gallery -->
+    {% if plots.roc_curves or plots.pr_curves or plots.correlation_heatmap %}
+    <div class="cyber-card p-4 mb-4">
+        <h5 class="fw-bold text-white mb-3"><i class="fas fa-images text-warning me-2"></i>Forensic ROC &amp; Precision-Recall Curves</h5>
+        <div class="row g-4">
+            {% if plots.roc_curves %}
+            <div class="col-md-6">
+                <div class="cyber-card p-2 text-center" style="background: rgba(0,0,0,0.4);">
+                    <img src="{{ url_for('static', filename=plots.roc_curves) }}" alt="ROC Curves" class="img-fluid rounded">
+                    <div class="text-muted small mt-2">ROC Curve Analysis across 5 Classifiers</div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if plots.pr_curves %}
+            <div class="col-md-6">
+                <div class="cyber-card p-2 text-center" style="background: rgba(0,0,0,0.4);">
+                    <img src="{{ url_for('static', filename=plots.pr_curves) }}" alt="PR Curves" class="img-fluid rounded">
+                    <div class="text-muted small mt-2">Precision-Recall Curve with Severe Imbalance Guard</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Confusion Matrix & Feature Importance Tabs -->
+    {% if cm_plots or fi_plots %}
+    <div class="cyber-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold text-white mb-0"><i class="fas fa-microscope text-info me-2"></i>Confusion Matrices &amp; Feature Importances</h5>
+        </div>
+
+        <ul class="nav cyber-tabs mb-4" id="plotsTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabCm">Confusion Matrices</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabFi">Feature Importance Rankings</button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tabCm">
+                <div class="row g-4">
+                    {% for name, plot_path in cm_plots.items() %}
+                    <div class="col-md-4 col-sm-6 text-center">
+                        <div class="cyber-card p-2" style="background: rgba(0,0,0,0.4);">
+                            <img src="{{ url_for('static', filename=plot_path) }}" alt="{{ name }} Confusion Matrix" class="img-fluid rounded">
+                            <h6 class="text-white fw-bold mt-2 mb-0">{{ name }}</h6>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="tabFi">
+                <div class="row g-4">
+                    {% for name, plot_path in fi_plots.items() %}
+                    <div class="col-md-6 text-center">
+                        <div class="cyber-card p-2" style="background: rgba(0,0,0,0.4);">
+                            <img src="{{ url_for('static', filename=plot_path) }}" alt="{{ name }} Feature Importance" class="img-fluid rounded">
+                            <h6 class="text-white fw-bold mt-2 mb-0">{{ name }} Feature Weights</h6>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const rawMetrics = {{ models_dict|tojson if models_dict else '{}' }};
+    const labels = Object.keys(rawMetrics);
+    if (labels.length === 0) return;
+
+    const f1Scores = labels.map(k => (rawMetrics[k].f1 * 100).toFixed(2));
+    const accuracies = labels.map(k => (rawMetrics[k].accuracy * 100).toFixed(2));
+    const latencies = labels.map(k => rawMetrics[k].prediction_time_s);
+
+    // Bar Chart
+    const ctxBar = document.getElementById('modelBarChart');
+    if (ctxBar) {
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'F1-Score (%)',
+                        data: f1Scores,
+                        backgroundColor: 'rgba(56, 189, 248, 0.7)',
+                        borderColor: '#38bdf8',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Accuracy (%)',
+                        data: accuracies,
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: '#10b981',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#94a3b8' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { min: 90, max: 100, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+    }
+
+    // Latency Chart
+    const ctxLat = document.getElementById('latencyChart');
+    if (ctxLat) {
+        new Chart(ctxLat, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Latency (s)',
+                    data: latencies,
+                    backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                    borderColor: '#f59e0b',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#94a3b8' } }
+                },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

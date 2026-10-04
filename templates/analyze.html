@@ -1,0 +1,414 @@
+{% extends 'base.html' %}
+{% block title %}Live URL Scanner &amp; Deep Threat Inspector — PhishGuard AI{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb & Title -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <a href="/" class="text-secondary small text-decoration-none"><i class="fas fa-home me-1"></i> Dashboard</a>
+                <span class="text-muted small">/</span>
+                <span class="text-info small fw-bold">Live Forensic Scanner</span>
+            </div>
+            <h2 class="fw-bold text-white mb-1"><i class="fas fa-search-dollar text-warning me-2"></i>URL Risk Analysis &amp; Inspector</h2>
+            <p class="text-secondary small mb-0">Static heuristic, lexical, and ensemble machine learning classification (zero execution threat).</p>
+        </div>
+        <div class="mt-3 mt-md-0 d-flex gap-2">
+            <a href="/api-docs" class="btn btn-cyber-outline btn-sm">
+                <i class="fas fa-terminal me-1"></i> REST API Docs
+            </a>
+            <button class="btn btn-cyber-primary btn-sm" onclick="fillUrl('http://secure-account-verification-example.com/login'); window.runLiveScan();">
+                <i class="fas fa-vial me-1"></i> Test Sample Phish
+            </button>
+        </div>
+    </div>
+
+    <!-- Mode Selector Tabs (Single URL vs Batch URL) -->
+    <ul class="nav cyber-tabs mb-4" id="scannerModeTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="single-tab" data-bs-toggle="tab" data-bs-target="#singlePane" type="button" role="tab">
+                <i class="fas fa-crosshairs me-1 text-info"></i> Single URL Deep Scan
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batchPane" type="button" role="tab">
+                <i class="fas fa-layer-group me-1 text-warning"></i> Batch Multi-URL Inspector
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="scannerTabContent">
+        <!-- PANE 1: SINGLE URL INSPECTOR -->
+        <div class="tab-pane fade show active" id="singlePane" role="tabpanel">
+            <!-- URL Input Box -->
+            <div class="cyber-card p-4 mb-4">
+                <form id="analyzeForm" onsubmit="runLiveScan(event)">
+                    <div class="cyber-input-group mb-3">
+                        <span class="ps-2 text-secondary">
+                            <i class="fas fa-globe text-info"></i>
+                        </span>
+                        <input type="text" class="url-field" name="url" id="urlInput"
+                               placeholder="https://example.com/auth/login"
+                               value="{% if result %}{{ result.url }}{% endif %}"
+                               autocomplete="off" required>
+                        <button type="submit" class="btn btn-cyber-primary" id="analyzeBtn">
+                            <i class="fas fa-radar me-1"></i> Scan Now
+                        </button>
+                    </div>
+                </form>
+
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <small class="text-muted"><i class="fas fa-bolt me-1 text-warning"></i> Presets:</small>
+                        <span class="preset-badge badge-safe" onclick="fillUrl('https://www.google.com')">
+                            <i class="fab fa-google text-success"></i> google.com
+                        </span>
+                        <span class="preset-badge badge-safe" onclick="fillUrl('https://github.com')">
+                            <i class="fab fa-github text-info"></i> github.com
+                        </span>
+                        <span class="preset-badge badge-danger" onclick="fillUrl('http://secure-account-verification-example.com/login')">
+                            <i class="fas fa-shield-virus text-danger"></i> banking-spoof.com
+                        </span>
+                        <span class="preset-badge badge-danger" onclick="fillUrl('https://paypal.com.security-verify.tk/login')">
+                            <i class="fas fa-skull text-warning"></i> paypal-spoof.tk
+                        </span>
+                    </div>
+
+                    <small class="text-muted">
+                        <i class="fas fa-lock text-success me-1"></i> Static In-Memory Parser
+                    </small>
+                </div>
+
+                <!-- Live 4-Stage Stepper -->
+                <div id="scanProgressBox" class="scan-progress-box d-none mt-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold small text-info"><i class="fas fa-spinner fa-spin me-2"></i> Analyzing URL vector...</span>
+                        <span class="badge bg-dark border border-secondary text-secondary">54 Dimensions</span>
+                    </div>
+                    <div class="scan-step-item" id="step-lexical">
+                        <span class="scan-step-indicator"><i class="fas fa-circle-notch"></i></span>
+                        <span>Phase 1: Lexical dissection &amp; Shannon Entropy calculation</span>
+                    </div>
+                    <div class="scan-step-item" id="step-dns">
+                        <span class="scan-step-indicator"><i class="fas fa-circle-notch"></i></span>
+                        <span>Phase 2: Protocol security, port anomalies &amp; redirect tracking</span>
+                    </div>
+                    <div class="scan-step-item" id="step-heuristics">
+                        <span class="scan-step-indicator"><i class="fas fa-circle-notch"></i></span>
+                        <span>Phase 3: Brand impersonation &amp; financial token heuristic engine</span>
+                    </div>
+                    <div class="scan-step-item" id="step-ml">
+                        <span class="scan-step-indicator"><i class="fas fa-circle-notch"></i></span>
+                        <span>Phase 4: ML Ensemble inference (XGBoost / Random Forest)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Server Rendered or AJAX Live Result Area -->
+            <div id="liveResultArea" class="{% if not result %}d-none{% endif %}">
+                {% if result %}
+                {% set is_phish = (result.prediction == 'PHISHING') %}
+                <div class="cyber-card p-4 mb-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 pb-3 border-bottom border-secondary">
+                        <div>
+                            <span class="badge bg-dark border border-secondary text-secondary mb-1">INSPECTION RESULT</span>
+                            <h4 class="mb-0 text-white font-monospace text-truncate" id="resAnalyzedUrl" style="max-width: 650px;">{{ result.url }}</h4>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-cyber-outline btn-sm" data-copy-target="resAnalyzedUrl">
+                                <i class="fas fa-copy me-1"></i> Copy URL
+                            </button>
+                            <button class="btn btn-cyber-outline btn-sm" onclick="window.print()">
+                                <i class="fas fa-print me-1"></i> Print Dossier
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Main Verdict Banner -->
+                    <div class="verdict-banner mb-4 {% if is_phish %}verdict-phishing{% else %}verdict-legitimate{% endif %}" id="resVerdictBanner">
+                        <div class="row align-items-center g-4">
+                            <div class="col-md-4 text-center">
+                                <div class="radial-gauge-container" id="resGauge" data-score="{{ result.risk_score }}">
+                                    <svg class="radial-gauge-svg" width="160" height="160" viewBox="0 0 160 160">
+                                        <circle class="radial-gauge-bg" cx="80" cy="80" r="60"></circle>
+                                        <circle class="radial-gauge-progress" cx="80" cy="80" r="60"></circle>
+                                    </svg>
+                                    <div class="radial-gauge-text">
+                                        <div class="radial-gauge-value" id="resRiskScore">{{ result.risk_score }}%</div>
+                                        <div class="radial-gauge-label">RISK INDEX</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-8">
+                                <div class="mb-2">
+                                    <span class="verdict-badge {% if is_phish %}badge-danger{% else %}badge-success{% endif %}" id="resVerdictBadge">
+                                        {% if is_phish %}
+                                        <i class="fas fa-skull-crossbones me-2"></i> PHISHING DETECTED
+                                        {% else %}
+                                        <i class="fas fa-shield-check me-2"></i> LEGITIMATE (SAFE)
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <p class="text-white fw-semibold mb-3" id="resRecommendation">{{ result.safety_recommendation }}</p>
+                                
+                                <div class="row g-2">
+                                    <div class="col-6 col-sm-3">
+                                        <small class="text-muted d-block">Confidence</small>
+                                        <span class="fw-bold text-info" id="resConfidence">{{ result.confidence }}%</span>
+                                    </div>
+                                    <div class="col-6 col-sm-3">
+                                        <small class="text-muted d-block">Probability</small>
+                                        <span class="fw-bold text-warning font-monospace" id="resProbability">{{ result.probability }}</span>
+                                    </div>
+                                    <div class="col-6 col-sm-3">
+                                        <small class="text-muted d-block">Risk Level</small>
+                                        <span class="fw-bold {% if is_phish %}text-danger{% else %}text-success{% endif %}">{{ result.risk_level }}</span>
+                                    </div>
+                                    <div class="col-6 col-sm-3">
+                                        <small class="text-muted d-block">Analysis Type</small>
+                                        <span class="fw-bold text-secondary">Static Feature Matrix</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Forensic Tabs -->
+                    <ul class="nav cyber-tabs mb-4" id="dossierTabs" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabFactors">
+                                <i class="fas fa-triangle-exclamation me-1 text-warning"></i> Threat Indicators ({{ result.contributing_factors|length }})
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabDna">
+                                <i class="fas fa-dna me-1 text-info"></i> Extracted URL DNA
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabAction">
+                                <i class="fas fa-clipboard-check me-1 text-success"></i> Mitigation Action
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabJson">
+                                <i class="fas fa-code me-1 text-primary"></i> Raw JSON
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- Factors Tab -->
+                        <div class="tab-pane fade show active" id="tabFactors">
+                            <div id="resFactorsList">
+                                {% if result.contributing_factors %}
+                                    {% for f in result.contributing_factors %}
+                                    <div class="factor-list-item">
+                                        <i class="fas {% if is_phish %}fa-exclamation-triangle factor-icon-danger{% else %}fa-check-circle factor-icon-safe{% endif %}"></i>
+                                        <span>{{ f }}</span>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="text-muted small">No specific threat anomalies detected in URL token sequence.</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- DNA Features Tab -->
+                        <div class="tab-pane fade" id="tabDna">
+                            <div class="row g-2" id="resFeatureGrid">
+                                {% if result.interpretable_features %}
+                                    {% for key, val in result.interpretable_features.items() %}
+                                    <div class="col-6 col-md-3">
+                                        <div class="feature-badge-card">
+                                            <div class="feature-badge-name">{{ key.replace('_', ' ') }}</div>
+                                            <div class="feature-badge-value text-info">{{ val }}</div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Mitigation Checklist Tab -->
+                        <div class="tab-pane fade" id="tabAction">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="cyber-card p-3 h-100">
+                                        <h6 class="text-white fw-bold mb-2"><i class="fas fa-user-shield text-info me-2"></i>For End Users</h6>
+                                        <ul class="list-unstyled small text-secondary mb-0">
+                                            <li class="mb-2"><i class="fas fa-angle-right text-info me-2"></i>{% if is_phish %}Never enter credentials or personal data on this domain.{% else %}Verify the domain spelling matches the authentic organization.{% endif %}</li>
+                                            <li class="mb-2"><i class="fas fa-angle-right text-info me-2"></i>Look for authentic EV SSL certificates and HTTPS padlock.</li>
+                                            <li class="mb-2"><i class="fas fa-angle-right text-info me-2"></i>Enable multi-factor authentication (MFA/2FA) on all financial accounts.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="cyber-card p-3 h-100">
+                                        <h6 class="text-white fw-bold mb-2"><i class="fas fa-network-wired text-warning me-2"></i>For SecOps / SOC Analysts</h6>
+                                        <ul class="list-unstyled small text-secondary mb-0">
+                                            <li class="mb-2"><i class="fas fa-angle-right text-warning me-2"></i>Ingest domain into firewall DNS sinkhole / blocklists.</li>
+                                            <li class="mb-2"><i class="fas fa-angle-right text-warning me-2"></i>Query SIEM logs for outbound proxy connections to this destination.</li>
+                                            <li class="mb-2"><i class="fas fa-angle-right text-warning me-2"></i>Report domain to Google Safe Browsing and APWG PhishTank.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Raw JSON Tab -->
+                        <div class="tab-pane fade" id="tabJson">
+                            <div class="position-relative">
+                                <button class="btn btn-sm btn-dark position-absolute top-0 end-0 m-2 border border-secondary" data-copy-target="resJsonCode">
+                                    <i class="fas fa-copy me-1"></i> Copy
+                                </button>
+                                <pre class="bg-black p-3 rounded font-monospace small text-info mb-0" id="resJsonCode" style="max-height: 350px; overflow-y: auto;">{{ result|tojson(indent=2) }}</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Empty placeholder for AJAX rendering -->
+                <div class="cyber-card p-4 mb-4">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 pb-3 border-bottom border-secondary">
+                        <div>
+                            <span class="badge bg-dark border border-secondary text-secondary mb-1">INSPECTION RESULT</span>
+                            <h4 class="mb-0 text-white font-monospace text-truncate" id="resAnalyzedUrl" style="max-width: 650px;">-</h4>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-cyber-outline btn-sm" data-copy-target="resAnalyzedUrl">
+                                <i class="fas fa-copy me-1"></i> Copy URL
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="verdict-banner mb-4" id="resVerdictBanner">
+                        <div class="row align-items-center g-4">
+                            <div class="col-md-4 text-center">
+                                <div class="radial-gauge-container" id="resGauge" data-score="0">
+                                    <svg class="radial-gauge-svg" width="160" height="160" viewBox="0 0 160 160">
+                                        <circle class="radial-gauge-bg" cx="80" cy="80" r="60"></circle>
+                                        <circle class="radial-gauge-progress" cx="80" cy="80" r="60"></circle>
+                                    </svg>
+                                    <div class="radial-gauge-text">
+                                        <div class="radial-gauge-value" id="resRiskScore">0%</div>
+                                        <div class="radial-gauge-label">RISK INDEX</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="mb-2">
+                                    <span class="verdict-badge" id="resVerdictBadge">-</span>
+                                </div>
+                                <p class="text-white fw-semibold mb-3" id="resRecommendation">-</p>
+                                <div class="row g-2">
+                                    <div class="col-6 col-sm-3">
+                                        <small class="text-muted d-block">Confidence</small>
+                                        <span class="fw-bold text-info" id="resConfidence">0%</span>
+                                    </div>
+                                    <div class="col-6 col-sm-3">
+                                        <small class="text-muted d-block">Probability</small>
+                                        <span class="fw-bold text-warning font-monospace" id="resProbability">0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <h6 class="text-white fw-bold mb-3"><i class="fas fa-shield-virus text-warning me-2"></i>Contributing Threat Factors</h6>
+                            <div id="resFactorsList"></div>
+                        </div>
+                        <div class="col-lg-6">
+                            <h6 class="text-white fw-bold mb-3"><i class="fas fa-dna text-info me-2"></i>Extracted URL DNA</h6>
+                            <div class="row g-2" id="resFeatureGrid"></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top border-secondary">
+                        <button class="btn btn-sm btn-link text-secondary text-decoration-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#rawJsonCollapse">
+                            <i class="fas fa-code me-1"></i> Show / Hide Raw JSON
+                        </button>
+                        <div class="collapse mt-2" id="rawJsonCollapse">
+                            <pre class="bg-black p-3 rounded font-monospace small text-info mb-0" id="resJsonCode" style="max-height: 250px; overflow-y: auto;"></pre>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- PANE 2: BATCH MULTI-URL INSPECTOR -->
+        <div class="tab-pane fade" id="batchPane" role="tabpanel">
+            <div class="cyber-card p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-white mb-0"><i class="fas fa-layer-group text-warning me-2"></i>High-Throughput Batch Classifier</h5>
+                    <button class="btn btn-cyber-outline btn-sm" onclick="document.getElementById('batchUrlsInput').value = 'https://google.com\nhttp://secure-account-verification-example.com/login\nhttps://github.com\nhttps://paypal.com.account-update.tk/auth';">
+                        <i class="fas fa-vial me-1"></i> Load Sample List
+                    </button>
+                </div>
+                <p class="text-secondary small">Paste multiple URLs (one per line, up to 50 URLs). The engine extracts features and scores each URL simultaneously.</p>
+                
+                <textarea class="form-control bg-dark text-white border-secondary font-monospace mb-3" id="batchUrlsInput" rows="6" placeholder="https://google.com&#10;http://phishing-site-example.com/login&#10;https://microsoft.com"></textarea>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="text-muted small"><i class="fas fa-info-circle me-1"></i> Powered by <code>/api/analyze-batch</code></span>
+                    <button class="btn btn-cyber-primary" id="startBatchBtn">
+                        <i class="fas fa-play me-2"></i> Start Batch Scan
+                    </button>
+                </div>
+            </div>
+
+            <!-- Batch Summary Metrics -->
+            <div id="batchSummaryCard" class="row g-3 mb-4 d-none">
+                <div class="col-4">
+                    <div class="cyber-card p-3 text-center">
+                        <div class="text-muted small">Total Scanned</div>
+                        <h3 class="fw-bold text-white mb-0" id="batchTotalCount">0</h3>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="cyber-card p-3 text-center">
+                        <div class="text-muted small">Phishing Flagged</div>
+                        <h3 class="fw-bold text-danger mb-0" id="batchPhishCount">0</h3>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="cyber-card p-3 text-center">
+                        <div class="text-muted small">Legitimate Flagged</div>
+                        <h3 class="fw-bold text-success mb-0" id="batchSafeCount">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batch Results Table -->
+            <div class="cyber-card p-3">
+                <div class="table-responsive">
+                    <table class="table batch-table text-white mb-0">
+                        <thead>
+                            <tr class="text-muted small">
+                                <th>#</th>
+                                <th>URL</th>
+                                <th>Verdict</th>
+                                <th>Risk Score</th>
+                                <th>Confidence</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchResultsBody">
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted small">
+                                    No batch scan executed yet. Paste URLs above and click "Start Batch Scan".
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

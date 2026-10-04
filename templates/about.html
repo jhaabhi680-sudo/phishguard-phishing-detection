@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}System Architecture &amp; Dataset — PhishGuard AI{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <a href="/" class="text-secondary small text-decoration-none"><i class="fas fa-home me-1"></i> Dashboard</a>
+                <span class="text-muted small">/</span>
+                <span class="text-info small fw-bold">System Architecture</span>
+            </div>
+            <h2 class="fw-bold text-white mb-1"><i class="fas fa-microchip text-info me-2"></i>Architecture &amp; Dataset Specifications</h2>
+            <p class="text-secondary small mb-0">Engineered with 54-dimensional lexical profiling and multi-model benchmark validation.</p>
+        </div>
+        <div class="mt-3 mt-md-0">
+            <a href="https://archive.ics.uci.edu/dataset/967/phiusiil+phishing+url+dataset" target="_blank" class="btn btn-cyber-outline btn-sm">
+                <i class="fas fa-external-link-alt me-1"></i> UCI Repository
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <!-- Core Architecture -->
+            <div class="cyber-card p-4 mb-4">
+                <h5 class="fw-bold text-white mb-3"><i class="fas fa-diagram-project text-primary me-2"></i>Inference Pipeline Architecture</h5>
+                <p class="text-secondary small">
+                    PhishGuard AI executes zero-network-interaction static inspection to protect clients from zero-day exploit payloads.
+                </p>
+
+                <div class="p-3 rounded border border-secondary bg-black font-monospace small text-info mb-4" style="line-height: 1.6;">
+                    Raw Input URL ➔ Syntax Normalization ➔ 54-Dimension Feature Extractor<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;↳ Shannon Entropy Calculation (H = -Σ p(x) log2 p(x))<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;↳ Token Distribution &amp; Brand Mimicry Heuristics<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;↳ StandardScaler Normalization<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;↳ Machine Learning Inference (Ensemble Classifiers)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;↳ Weighted Risk Scoring &amp; Explainability XAI Engine ➔ Client JSON / UI
+                </div>
+
+                <h6 class="text-white fw-bold small mb-2">Technology Ecosystem</h6>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge bg-dark border border-secondary text-info"><i class="fab fa-python me-1"></i> Python 3.13</span>
+                    <span class="badge bg-dark border border-secondary text-primary">Flask WSGI</span>
+                    <span class="badge bg-dark border border-secondary text-warning">scikit-learn 1.2+</span>
+                    <span class="badge bg-dark border border-secondary text-danger">XGBoost Ensemble</span>
+                    <span class="badge bg-dark border border-secondary text-success">pandas &amp; numpy</span>
+                    <span class="badge bg-dark border border-secondary text-secondary">Bootstrap 5 + Custom Glassmorphism</span>
+                </div>
+            </div>
+
+            <!-- Exploratory Data Analysis Gallery -->
+            {% if plots %}
+            <div class="cyber-card p-4 mb-4">
+                <h5 class="fw-bold text-white mb-3"><i class="fas fa-chart-pie text-warning me-2"></i>Exploratory Data Analysis (EDA)</h5>
+                <p class="text-secondary small">Feature distributions across legitimate vs. phishing samples:</p>
+                <div class="row g-3">
+                    {% for plot_name, plot_path in plots.items() %}
+                    {% if 'roc' not in plot_name and 'pr_curve' not in plot_name and 'model_comp' not in plot_name and 'cm_' not in plot_name and 'feature_import' not in plot_name %}
+                    <div class="col-md-6 text-center">
+                        <div class="cyber-card p-2" style="background: rgba(0,0,0,0.4);">
+                            <img src="{{ url_for('static', filename=plot_path) }}" class="img-fluid rounded" alt="{{ plot_name }}">
+                            <div class="text-muted small mt-2">{{ plot_name.replace('_', ' ').title() }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar Dataset Info -->
+        <div class="col-lg-4">
+            <!-- Dataset Specs -->
+            <div class="cyber-card p-4 mb-4">
+                <h6 class="text-white fw-bold mb-3"><i class="fas fa-database text-warning me-2"></i>Dataset Benchmark</h6>
+                <table class="table table-dark table-sm mb-0">
+                    <tr><td class="text-muted">Dataset</td><td class="text-white">{{ dataset_info.name }}</td></tr>
+                    <tr><td class="text-muted">Source</td><td><a href="{{ dataset_info.url }}" target="_blank" class="text-info text-decoration-none">UCI ML Repo</a></td></tr>
+                    <tr><td class="text-muted">Sample Count</td><td class="text-white font-monospace">{{ '{:,}'.format(dataset_info.total_records) }}</td></tr>
+                    <tr><td class="text-muted">Dimensionality</td><td class="text-info font-monospace">{{ dataset_info.total_features }} features</td></tr>
+                    <tr><td class="text-muted">Task Type</td><td class="text-success">Supervised Binary</td></tr>
+                    <tr><td class="text-muted">Phishing Label (0)</td><td class="text-danger font-monospace">42.8%</td></tr>
+                    <tr><td class="text-muted">Legitimate Label (1)</td><td class="text-success font-monospace">57.2%</td></tr>
+                </table>
+            </div>
+
+            <!-- Defense in Depth -->
+            <div class="cyber-card p-4 mb-4">
+                <h6 class="text-white fw-bold mb-2"><i class="fas fa-shield-halved text-success me-2"></i>Enterprise Security Model</h6>
+                <p class="text-secondary small mb-3">
+                    PhishGuard AI provides defense-in-depth static classification. By isolating URL syntactic indicators without initiating socket handshakes to malicious hosts, it eliminates drive-by malware exploits and IP telemetry harvesting.
+                </p>
+                <div class="p-2 border border-secondary rounded bg-dark small text-secondary">
+                    <i class="fas fa-check text-success me-1"></i> Compatible with proxy sinks, SOAR, and mail gateways.
+                </div>
+            </div>
+
+            <!-- Future Roadmap -->
+            <div class="cyber-card p-4">
+                <h6 class="text-white fw-bold mb-2"><i class="fas fa-road text-info me-2"></i>Production Roadmap</h6>
+                <ul class="list-unstyled small text-secondary mb-0">
+                    <li class="mb-2"><i class="fas fa-chevron-right text-info me-2"></i>Autonomous WHOIS Domain Age Integration</li>
+                    <li class="mb-2"><i class="fas fa-chevron-right text-info me-2"></i>Cross-Origin Chromium Extension v3</li>
+                    <li class="mb-2"><i class="fas fa-chevron-right text-info me-2"></i>Continuous Stream Retraining with Kafka</li>
+                    <li class="mb-0"><i class="fas fa-chevron-right text-info me-2"></i>TLS Certificate Transparency Log Crosscheck</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

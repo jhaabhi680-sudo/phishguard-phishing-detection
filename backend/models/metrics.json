@@ -1,0 +1,215 @@
+{
+  "selected_model": "XGBoost",
+  "selection_metric": "f1_score",
+  "is_demo_dataset": true,
+  "dataset_note": "Demonstration dataset (1,800 URLs with realistic borderline cases). Replace dataset/phishing_dataset.csv with a larger real-world dataset and re-run train.py anytime.",
+  "dataset_summary": {
+    "total_rows": 1777,
+    "duplicates_removed": 23,
+    "legitimate_count": 872,
+    "phishing_count": 905,
+    "train_samples": 1421,
+    "test_samples": 356
+  },
+  "best_model_metrics": {
+    "accuracy": 0.9747,
+    "precision": 0.9725,
+    "recall": 0.9779,
+    "f1_score": 0.9752,
+    "roc_auc": 0.9744,
+    "confusion_matrix": [
+      [
+        170,
+        5
+      ],
+      [
+        4,
+        177
+      ]
+    ],
+    "train_time_seconds": 0.5079
+  },
+  "models": {
+    "Logistic Regression": {
+      "accuracy": 0.9663,
+      "precision": 0.9721,
+      "recall": 0.9613,
+      "f1_score": 0.9667,
+      "roc_auc": 0.9677,
+      "confusion_matrix": [
+        [
+          170,
+          5
+        ],
+        [
+          7,
+          174
+        ]
+      ],
+      "train_time_seconds": 0.0379
+    },
+    "Decision Tree": {
+      "accuracy": 0.9635,
+      "precision": 0.9719,
+      "recall": 0.9558,
+      "f1_score": 0.9638,
+      "roc_auc": 0.9686,
+      "confusion_matrix": [
+        [
+          170,
+          5
+        ],
+        [
+          8,
+          173
+        ]
+      ],
+      "train_time_seconds": 0.0104
+    },
+    "Random Forest": {
+      "accuracy": 0.9747,
+      "precision": 0.9725,
+      "recall": 0.9779,
+      "f1_score": 0.9752,
+      "roc_auc": 0.9654,
+      "confusion_matrix": [
+        [
+          170,
+          5
+        ],
+        [
+          4,
+          177
+        ]
+      ],
+      "train_time_seconds": 0.7595
+    },
+    "Support Vector Machine": {
+      "accuracy": 0.9747,
+      "precision": 0.9725,
+      "recall": 0.9779,
+      "f1_score": 0.9752,
+      "roc_auc": 0.9712,
+      "confusion_matrix": [
+        [
+          170,
+          5
+        ],
+        [
+          4,
+          177
+        ]
+      ],
+      "train_time_seconds": 0.1557
+    },
+    "XGBoost": {
+      "accuracy": 0.9747,
+      "precision": 0.9725,
+      "recall": 0.9779,
+      "f1_score": 0.9752,
+      "roc_auc": 0.9744,
+      "confusion_matrix": [
+        [
+          170,
+          5
+        ],
+        [
+          4,
+          177
+        ]
+      ],
+      "train_time_seconds": 0.5079
+    }
+  },
+  "feature_importances": [
+    {
+      "feature": "num_digits",
+      "importance": 0.36
+    },
+    {
+      "feature": "has_suspicious_tld",
+      "importance": 0.1923
+    },
+    {
+      "feature": "path_length",
+      "importance": 0.1431
+    },
+    {
+      "feature": "special_char_ratio",
+      "importance": 0.083
+    },
+    {
+      "feature": "num_slashes",
+      "importance": 0.0604
+    },
+    {
+      "feature": "is_shortened",
+      "importance": 0.0489
+    },
+    {
+      "feature": "num_subdomains",
+      "importance": 0.0149
+    },
+    {
+      "feature": "num_special_chars",
+      "importance": 0.0143
+    },
+    {
+      "feature": "suspicious_keyword_count",
+      "importance": 0.0135
+    },
+    {
+      "feature": "num_question_marks",
+      "importance": 0.0098
+    },
+    {
+      "feature": "hostname_length",
+      "importance": 0.0097
+    },
+    {
+      "feature": "has_https",
+      "importance": 0.0094
+    },
+    {
+      "feature": "domain_entropy",
+      "importance": 0.0094
+    },
+    {
+      "feature": "url_length",
+      "importance": 0.0084
+    },
+    {
+      "feature": "num_hyphens",
+      "importance": 0.0084
+    },
+    {
+      "feature": "num_dots",
+      "importance": 0.0078
+    },
+    {
+      "feature": "digit_ratio",
+      "importance": 0.0068
+    },
+    {
+      "feature": "num_underscores",
+      "importance": 0.0
+    },
+    {
+      "feature": "num_equals",
+      "importance": 0.0
+    },
+    {
+      "feature": "num_at",
+      "importance": 0.0
+    },
+    {
+      "feature": "has_ip",
+      "importance": 0.0
+    },
+    {
+      "feature": "has_suspicious_keywords",
+      "importance": 0.0
+    }
+  ],
+  "trained_at": "2026-10-04 16:46:54"
+}

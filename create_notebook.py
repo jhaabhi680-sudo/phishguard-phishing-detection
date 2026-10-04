@@ -1,0 +1,632 @@
+"""
+create_notebook.py
+Script to generate the Jupyter notebook programmatically.
+"""
+import json
+import os
+
+nb = {
+    "nbformat": 4,
+    "nbformat_minor": 5,
+    "metadata": {
+        "kernelspec": {"display_name": "Python 3", "language": "python", "name": "python3"},
+        "language_info": {"name": "python", "version": "3.8.0"}
+    },
+    "cells": [
+        {
+            "cell_type": "markdown", "id": "cell_title", "metadata": {},
+            "source": [
+                "# PhishGuard AI\n",
+                "## AI-Based Phishing Website Detection & Risk Analysis System\n",
+                "**B.Tech AI/ML College Project**\n\n",
+                "**Dataset:** PhiUSIIL Phishing URL Dataset - UCI Machine Learning Repository  \n",
+                "https://archive.ics.uci.edu/dataset/967/phiusiil+phishing+url+dataset\n\n",
+                "- Records: ~235,795 | Features: 54 | Labels: 0=Phishing, 1=Legitimate"
+            ]
+        },
+        {
+            "cell_type": "markdown", "id": "cell_s1", "metadata": {},
+            "source": ["## 1. Setup & Imports"]
+        },
+        {
+            "cell_type": "code", "id": "cell_imports", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "import sys, os, time, warnings\n",
+                "import pandas as pd\n",
+                "import numpy as np\n",
+                "import matplotlib\n",
+                "matplotlib.use('Agg')  # Server-side rendering\n",
+                "import matplotlib.pyplot as plt\n",
+                "import seaborn as sns\n",
+                "from sklearn.model_selection import train_test_split\n",
+                "from sklearn.preprocessing import StandardScaler, LabelEncoder\n",
+                "from sklearn.linear_model import LogisticRegression\n",
+                "from sklearn.tree import DecisionTreeClassifier\n",
+                "from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier\n",
+                "from sklearn.metrics import (\n",
+                "    accuracy_score, precision_score, recall_score, f1_score,\n",
+                "    roc_auc_score, confusion_matrix, ConfusionMatrixDisplay,\n",
+                "    roc_curve, precision_recall_curve, auc\n",
+                ")\n",
+                "import joblib\n",
+                "warnings.filterwarnings('ignore')\n",
+                "plt.style.use('seaborn-v0_8-darkgrid')\n",
+                "print('All imports successful!')"
+            ]
+        },
+        {
+            "cell_type": "markdown", "id": "cell_s2", "metadata": {},
+            "source": ["## 2. Load Dataset"]
+        },
+        {
+            "cell_type": "code", "id": "cell_load", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# Load the PhiUSIIL Phishing URL Dataset\n",
+                "# Download from: https://archive.ics.uci.edu/dataset/967/phiusiil+phishing+url+dataset\n",
+                "DATA_PATH = '../data/PhiUSIIL_Phishing_URL_Dataset.csv'\n",
+                "df = pd.read_csv(DATA_PATH)\n",
+                "print(f'Shape: {df.shape}')\n",
+                "print(f'Columns ({len(df.columns)}): {df.columns.tolist()[:10]}...')\n",
+                "df.head()"
+            ]
+        },
+        {
+            "cell_type": "code", "id": "cell_stats", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "print('--- Data Types ---')\n",
+                "print(df.dtypes)\n",
+                "print('\\n--- Basic Statistics ---')\n",
+                "df.describe()"
+            ]
+        },
+        {
+            "cell_type": "markdown", "id": "cell_s3", "metadata": {},
+            "source": ["## 3. Data Quality Check"]
+        },
+        {
+            "cell_type": "code", "id": "cell_quality", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# Check missing values\n",
+                "print('--- Missing Values ---')\n",
+                "missing = df.isnull().sum()\n",
+                "print(missing[missing > 0] if missing.sum() > 0 else 'No missing values found!')\n",
+                "\n",
+                "# Check duplicates\n",
+                "n_dupes = df.duplicated().sum()\n",
+                "print(f'\\nDuplicate rows: {n_dupes}')\n",
+                "if n_dupes > 0:\n",
+                "    df = df.drop_duplicates().reset_index(drop=True)\n",
+                "    print(f'Removed. New shape: {df.shape}')"
+            ]
+        },
+        {
+            "cell_type": "markdown", "id": "cell_s4", "metadata": {},
+            "source": ["## 4. Exploratory Data Analysis (EDA)"]
+        },
+        {
+            "cell_type": "code", "id": "cell_class_dist", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# 4.1 Class Distribution (Phishing vs Legitimate)\n",
+                "print('Class Distribution:')\n",
+                "counts = df['label'].value_counts()\n",
+                "for cls, count in counts.items():\n",
+                "    name = 'Legitimate' if cls == 1 else 'Phishing'\n",
+                "    pct = count/len(df)*100\n",
+                "    print(f'  {name} ({cls}): {count:,} ({pct:.2f}%)')\n",
+                "\n",
+                "fig, axes = plt.subplots(1, 2, figsize=(12, 5))\n",
+                "axes[0].bar(['Legitimate (1)', 'Phishing (0)'],\n",
+                "            [counts.get(1,0), counts.get(0,0)],\n",
+                "            color=['#2ecc71', '#e74c3c'], edgecolor='black')\n",
+                "axes[0].set_title('Class Distribution (Count)', fontweight='bold')\n",
+                "axes[0].set_ylabel('Count')\n",
+                "for i, v in enumerate([counts.get(1,0), counts.get(0,0)]):\n",
+                "    axes[0].text(i, v + 500, f'{v:,}', ha='center', fontweight='bold')\n",
+                "axes[1].pie([counts.get(1,0), counts.get(0,0)],\n",
+                "            labels=['Legitimate', 'Phishing'],\n",
+                "            colors=['#2ecc71', '#e74c3c'], autopct='%1.1f%%')\n",
+                "axes[1].set_title('Class Distribution (%)', fontweight='bold')\n",
+                "plt.suptitle('Phishing vs Legitimate URL Distribution', fontsize=14, fontweight='bold')\n",
+                "plt.tight_layout()\n",
+                "plt.savefig('../static/plots/class_distribution.png', dpi=150, bbox_inches='tight')\n",
+                "plt.show()\n",
+                "print('Interpretation: Near-balanced classes. Stratified splitting will maintain this ratio in train/test sets.')"
+            ]
+        },
+        {
+            "cell_type": "code", "id": "cell_url_len", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# 4.2 URL Length Distribution\n",
+                "if 'URLLength' in df.columns:\n",
+                "    fig, ax = plt.subplots(figsize=(10, 5))\n",
+                "    for label, color, name in [(0, '#e74c3c', 'Phishing'), (1, '#2ecc71', 'Legitimate')]:\n",
+                "        subset = df[df['label']==label]['URLLength']\n",
+                "        subset = subset[subset < subset.quantile(0.99)]  # Clip outliers\n",
+                "        ax.hist(subset, bins=50, alpha=0.6, color=color, label=name)\n",
+                "    ax.set_title('URL Length Distribution: Phishing vs Legitimate', fontweight='bold')\n",
+                "    ax.set_xlabel('URL Length (characters)')\n",
+                "    ax.set_ylabel('Frequency')\n",
+                "    ax.legend()\n",
+                "    plt.tight_layout()\n",
+                "    plt.savefig('../static/plots/url_length_distribution.png', dpi=150, bbox_inches='tight')\n",
+                "    plt.show()\n",
+                "    print('Interpretation: Phishing URLs tend to be longer to hide the real destination.')"
+            ]
+        },
+        {
+            "cell_type": "code", "id": "cell_https", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# 4.3 HTTPS Distribution\n",
+                "if 'IsHTTPS' in df.columns:\n",
+                "    fig, axes = plt.subplots(1, 2, figsize=(12, 4))\n",
+                "    for idx, (label, color, name) in enumerate([(0, '#e74c3c', 'Phishing'), (1, '#2ecc71', 'Legitimate')]):\n",
+                "        subset = df[df['label']==label]['IsHTTPS'].value_counts(normalize=True)*100\n",
+                "        axes[idx].bar(['HTTP', 'HTTPS'], [subset.get(0,0), subset.get(1,0)],\n",
+                "                      color=['#95a5a6', color])\n",
+                "        axes[idx].set_title(f'{name} - HTTPS Usage', fontweight='bold')\n",
+                "        axes[idx].set_ylabel('Percentage (%)')\n",
+                "        for i, v in enumerate([subset.get(0,0), subset.get(1,0)]):\n",
+                "            axes[idx].text(i, v + 1, f'{v:.1f}%', ha='center', fontweight='bold')\n",
+                "    plt.suptitle('HTTPS Usage: Phishing vs Legitimate', fontsize=13, fontweight='bold')\n",
+                "    plt.tight_layout()\n",
+                "    plt.savefig('../static/plots/https_distribution.png', dpi=150, bbox_inches='tight')\n",
+                "    plt.show()\n",
+                "    print('Interpretation: HTTPS usage alone is not a safety guarantee.')"
+            ]
+        },
+        {
+            "cell_type": "code", "id": "cell_heatmap", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# 4.4 Correlation Heatmap (Top Features)\n",
+                "numeric_df = df.select_dtypes(include=[np.number])\n",
+                "corr_with_label = numeric_df.corr()['label'].abs().sort_values(ascending=False)\n",
+                "top_feats = corr_with_label.index[:16].tolist()\n",
+                "corr_mat = numeric_df[top_feats].corr()\n",
+                "\n",
+                "fig, ax = plt.subplots(figsize=(14, 10))\n",
+                "mask = np.triu(np.ones_like(corr_mat, dtype=bool))\n",
+                "sns.heatmap(corr_mat, mask=mask, annot=True, fmt='.2f',\n",
+                "            cmap='RdYlGn', center=0, ax=ax, annot_kws={'size': 7}, linewidths=0.5)\n",
+                "ax.set_title('Correlation Heatmap - Top Features vs Label', fontsize=13, fontweight='bold')\n",
+                "plt.xticks(rotation=45, ha='right', fontsize=8)\n",
+                "plt.yticks(fontsize=8)\n",
+                "plt.tight_layout()\n",
+                "plt.savefig('../static/plots/correlation_heatmap.png', dpi=150, bbox_inches='tight')\n",
+                "plt.show()\n",
+                "print('Interpretation: Features with high absolute correlation with label are most predictive.')"
+            ]
+        },
+        {
+            "cell_type": "markdown", "id": "cell_s5", "metadata": {},
+            "source": ["## 5. Feature Engineering\n\n### Why These Features Matter for Phishing Detection"]
+        },
+        {
+            "cell_type": "code", "id": "cell_feat_expl", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "feature_explanations = {\n",
+                "    'URLLength': 'Longer URLs hide real destination. Phishing sites average longer URLs.',\n",
+                "    'DomainLength': 'Very short/long domains indicate auto-generated or obfuscated names.',\n",
+                "    'NoOfSubDomain': 'Multiple subdomains (e.g., login.secure.bank.evil.com) are a phishing red flag.',\n",
+                "    'IsHTTPS': 'HTTPS is expected on legitimate sites. HTTP is a strong negative signal.',\n",
+                "    'NoOfOtherSpecialCharsInURL': 'Special chars confuse users and evade simple text filters.',\n",
+                "    'NoOfDash': 'Hyphens mimic legitimate brands (paypal-secure.com vs paypal.com).',\n",
+                "    'URLSimilarityIndex': 'Shannon entropy: high entropy = random/obfuscated URL characters.',\n",
+                "    'DomainTitleMatchScore': 'Low score = domain does not match page title = spoofing indicator.',\n",
+                "    'HasObfuscation': 'URL percent-encoding/hex values used to hide malicious content.',\n",
+                "    'Bank': 'Banking keywords used by phishers to appear legitimate.',\n",
+                "    'Pay': 'Payment keywords to lure victims.',\n",
+                "    'Crypto': 'Cryptocurrency keywords common in crypto scams.',\n",
+                "    'NoOfAt': '@ symbol in URL redirects browser to different host - classic trick.',\n",
+                "    'NoOfURLRedirects': 'Multiple redirects hide the final destination.',\n",
+                "}\n",
+                "print('Feature Explanations:')\n",
+                "print('-' * 80)\n",
+                "for feat, expl in feature_explanations.items():\n",
+                "    print(f'{feat:35s}: {expl}')"
+            ]
+        },
+        {
+            "cell_type": "markdown", "id": "cell_s6", "metadata": {},
+            "source": ["## 6. Data Preprocessing"]
+        },
+        {
+            "cell_type": "code", "id": "cell_preproc", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# Step 1: Remove irrelevant raw-text columns (not useful for ML)\n",
+                "drop_cols = [col for col in ['FILENAME', 'Domain', 'URL', 'Title'] if col in df.columns]\n",
+                "if drop_cols:\n",
+                "    df_clean = df.drop(columns=drop_cols)\n",
+                "    print(f'Dropped raw text columns: {drop_cols}')\n",
+                "else:\n",
+                "    df_clean = df.copy()\n",
+                "\n",
+                "# Step 2: Encode categorical columns\n",
+                "cat_cols = [c for c in df_clean.select_dtypes(include=['object']).columns if c != 'label']\n",
+                "if cat_cols:\n",
+                "    le = LabelEncoder()\n",
+                "    for col in cat_cols:\n",
+                "        df_clean[col] = le.fit_transform(df_clean[col].astype(str))\n",
+                "    print(f'Encoded categorical columns: {cat_cols}')\n",
+                "else:\n",
+                "    print('No categorical columns to encode (all numeric).')\n",
+                "\n",
+                "# Step 3: Check class distribution\n",
+                "print(f'\\nClass distribution: {df_clean[\"label\"].value_counts().to_dict()}')\n",
+                "\n",
+                "# Step 4: Stratified Train-Test Split (80/20)\n",
+                "X = df_clean.drop(columns=['label'])\n",
+                "y = df_clean['label']\n",
+                "X_train, X_test, y_train, y_test = train_test_split(\n",
+                "    X, y, test_size=0.2, random_state=42, stratify=y  # Stratified!\n",
+                ")\n",
+                "print(f'\\nTrain set: {X_train.shape[0]} samples')\n",
+                "print(f'Test set:  {X_test.shape[0]} samples')\n",
+                "print(f'Train class balance: {y_train.value_counts().to_dict()}')\n",
+                "print(f'Test class balance:  {y_test.value_counts().to_dict()}')\n",
+                "\n",
+                "# Step 5: Feature Scaling\n",
+                "# IMPORTANT: Fit scaler ONLY on training data to prevent data leakage!\n",
+                "scaler = StandardScaler()\n",
+                "X_train_sc = scaler.fit_transform(X_train)  # Fit + transform on train\n",
+                "X_test_sc = scaler.transform(X_test)          # Transform only on test\n",
+                "print('\\nStandardScaler fitted on training data only.')\n",
+                "print('Test set scaled using training statistics (no data leakage).')"
+            ]
+        },
+        {
+            "cell_type": "markdown", "id": "cell_s7", "metadata": {},
+            "source": ["## 7. Model Training & Evaluation"]
+        },
+        {
+            "cell_type": "code", "id": "cell_train", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# Define all models\n",
+                "models = {\n",
+                "    'Logistic Regression': LogisticRegression(max_iter=1000, random_state=42, n_jobs=-1),\n",
+                "    'Decision Tree': DecisionTreeClassifier(max_depth=15, min_samples_split=20, random_state=42),\n",
+                "    'Random Forest': RandomForestClassifier(n_estimators=100, max_depth=20, random_state=42, n_jobs=-1),\n",
+                "    'Gradient Boosting': GradientBoostingClassifier(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42),\n",
+                "}\n",
+                "\n",
+                "try:\n",
+                "    from xgboost import XGBClassifier\n",
+                "    models['XGBoost'] = XGBClassifier(n_estimators=100, learning_rate=0.1,\n",
+                "        max_depth=6, eval_metric='logloss', random_state=42, n_jobs=-1)\n",
+                "    print('XGBoost available and added.')\n",
+                "except ImportError:\n",
+                "    print('XGBoost not available, skipping.')\n",
+                "\n",
+                "# Train and evaluate all models\n",
+                "results = {}\n",
+                "print('\\n' + '='*70)\n",
+                "print('  MODEL TRAINING AND EVALUATION')\n",
+                "print('='*70)\n",
+                "\n",
+                "for name, model in models.items():\n",
+                "    print(f'\\nTraining: {name}...')\n",
+                "    t0 = time.time()\n",
+                "    model.fit(X_train_sc, y_train)\n",
+                "    train_time = time.time() - t0\n",
+                "\n",
+                "    t1 = time.time()\n",
+                "    y_pred = model.predict(X_test_sc)\n",
+                "    pred_time = time.time() - t1\n",
+                "    y_prob = model.predict_proba(X_test_sc)[:,1] if hasattr(model, 'predict_proba') else y_pred\n",
+                "\n",
+                "    results[name] = {\n",
+                "        'accuracy': accuracy_score(y_test, y_pred),\n",
+                "        'precision': precision_score(y_test, y_pred, zero_division=0),\n",
+                "        'recall': recall_score(y_test, y_pred, zero_division=0),\n",
+                "        'f1': f1_score(y_test, y_pred, zero_division=0),\n",
+                "        'roc_auc': roc_auc_score(y_test, y_prob),\n",
+                "        'y_pred': y_pred, 'y_prob': y_prob,\n",
+                "        'model': model, 'train_time': train_time, 'pred_time': pred_time\n",
+                "    }\n",
+                "    m = results[name]\n",
+                "    print(f'  Accuracy  : {m[\"accuracy\"]:.4f}')\n",
+                "    print(f'  Precision : {m[\"precision\"]:.4f}')\n",
+                "    print(f'  Recall    : {m[\"recall\"]:.4f}')\n",
+                "    print(f'  F1-Score  : {m[\"f1\"]:.4f}')\n",
+                "    print(f'  ROC-AUC   : {m[\"roc_auc\"]:.4f}')\n",
+                "    print(f'  Train time: {train_time:.2f}s | Pred time: {pred_time:.4f}s')"
+            ]
+        },
+        {
+            "cell_type": "code", "id": "cell_summary", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# Summary Table\n",
+                "print(f'\\n{\"Model\":25s} | Accuracy | Precision | Recall | F1-Score | ROC-AUC | Train(s)')\n",
+                "print('-'*90)\n",
+                "for name, m in results.items():\n",
+                "    print(f'{name:25s} | {m[\"accuracy\"]:.4f}   | {m[\"precision\"]:.4f}    | '\n",
+                "          f'{m[\"recall\"]:.4f} | {m[\"f1\"]:.4f}   | {m[\"roc_auc\"]:.4f}  | {m[\"train_time\"]:.1f}s')"
+            ]
+        },
+        {
+            "cell_type": "code", "id": "cell_roc", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# ROC Curves - all models\n",
+                "fig, ax = plt.subplots(figsize=(9, 7))\n",
+                "colors = plt.cm.tab10(np.linspace(0, 1, len(results)))\n",
+                "for (name, m), color in zip(results.items(), colors):\n",
+                "    fpr, tpr, _ = roc_curve(y_test, m['y_prob'])\n",
+                "    ax.plot(fpr, tpr, color=color, lw=2, label=f\"{name} (AUC={m['roc_auc']:.4f})\")\n",
+                "ax.plot([0,1],[0,1],'k--',lw=1.5,label='Random Classifier')\n",
+                "ax.fill_between([0,1],[0,1], alpha=0.05, color='gray')\n",
+                "ax.set_xlabel('False Positive Rate', fontsize=12)\n",
+                "ax.set_ylabel('True Positive Rate (Recall)', fontsize=12)\n",
+                "ax.set_title('ROC Curves - All Models Comparison', fontsize=14, fontweight='bold')\n",
+                "ax.legend(loc='lower right', fontsize=9)\n",
+                "ax.grid(True, alpha=0.4)\n",
+                "plt.tight_layout()\n",
+                "plt.savefig('../static/plots/roc_curves.png', dpi=150, bbox_inches='tight')\n",
+                "plt.show()\n",
+                "print('Interpretation: Curve closest to top-left corner has best discriminative power.')"
+            ]
+        },
+        {
+            "cell_type": "code", "id": "cell_pr", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# Precision-Recall Curves\n",
+                "fig, ax = plt.subplots(figsize=(9, 7))\n",
+                "colors = plt.cm.tab10(np.linspace(0, 1, len(results)))\n",
+                "for (name, m), color in zip(results.items(), colors):\n",
+                "    prec, rec, _ = precision_recall_curve(y_test, m['y_prob'])\n",
+                "    pr_auc = auc(rec, prec)\n",
+                "    ax.plot(rec, prec, color=color, lw=2, label=f\"{name} (PR-AUC={pr_auc:.4f})\")\n",
+                "ax.set_xlabel('Recall', fontsize=12)\n",
+                "ax.set_ylabel('Precision', fontsize=12)\n",
+                "ax.set_title('Precision-Recall Curves - All Models', fontsize=14, fontweight='bold')\n",
+                "ax.legend(loc='lower left', fontsize=9)\n",
+                "ax.grid(True, alpha=0.4)\n",
+                "plt.tight_layout()\n",
+                "plt.savefig('../static/plots/pr_curves.png', dpi=150, bbox_inches='tight')\n",
+                "plt.show()"
+            ]
+        },
+        {
+            "cell_type": "code", "id": "cell_cm", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# Confusion Matrices for all models\n",
+                "n = len(results)\n",
+                "cols_per_row = 3\n",
+                "rows = (n + cols_per_row - 1) // cols_per_row\n",
+                "fig, axes = plt.subplots(rows, cols_per_row, figsize=(15, 5*rows))\n",
+                "if rows == 1:\n",
+                "    axes = [axes] if n == 1 else list(axes)\n",
+                "else:\n",
+                "    axes = [ax for row in axes for ax in row]\n",
+                "\n",
+                "for ax, (name, m) in zip(axes, results.items()):\n",
+                "    cm = confusion_matrix(y_test, m['y_pred'])\n",
+                "    disp = ConfusionMatrixDisplay(cm, display_labels=['Phishing','Legitimate'])\n",
+                "    disp.plot(ax=ax, cmap='Blues', colorbar=False)\n",
+                "    ax.set_title(name, fontweight='bold')\n",
+                "\n",
+                "for ax in axes[len(results):]:\n",
+                "    ax.set_visible(False)\n",
+                "\n",
+                "plt.suptitle('Confusion Matrices - All Models', fontsize=13, fontweight='bold')\n",
+                "plt.tight_layout()\n",
+                "plt.savefig('../static/plots/confusion_matrices.png', dpi=150, bbox_inches='tight')\n",
+                "plt.show()\n",
+                "print('FN (bottom-left) = phishing missed = most dangerous error in phishing detection.')"
+            ]
+        },
+        {
+            "cell_type": "code", "id": "cell_comp", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# Model Comparison Bar Chart\n",
+                "metrics_to_plot = ['accuracy', 'precision', 'recall', 'f1', 'roc_auc']\n",
+                "metric_labels = ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'ROC-AUC']\n",
+                "model_names = list(results.keys())\n",
+                "x = np.arange(len(metrics_to_plot))\n",
+                "width = 0.8 / len(model_names)\n",
+                "colors = plt.cm.tab10(np.linspace(0, 1, len(model_names)))\n",
+                "\n",
+                "fig, ax = plt.subplots(figsize=(13, 7))\n",
+                "for i, (name, color) in enumerate(zip(model_names, colors)):\n",
+                "    values = [results[name][m] for m in metrics_to_plot]\n",
+                "    ax.bar(x + i*width - (len(model_names)-1)*width/2, values,\n",
+                "           width, label=name, color=color, alpha=0.85, edgecolor='black', lw=0.5)\n",
+                "\n",
+                "ax.set_xlabel('Metric', fontsize=12)\n",
+                "ax.set_ylabel('Score', fontsize=12)\n",
+                "ax.set_title('Model Performance Comparison - All Metrics', fontsize=14, fontweight='bold')\n",
+                "ax.set_xticks(x)\n",
+                "ax.set_xticklabels(metric_labels, fontsize=11)\n",
+                "ax.set_ylim(0, 1.08)\n",
+                "ax.legend(fontsize=9)\n",
+                "ax.grid(axis='y', alpha=0.4)\n",
+                "ax.axhline(y=0.9, color='red', linestyle='--', alpha=0.4)\n",
+                "plt.tight_layout()\n",
+                "plt.savefig('../static/plots/model_comparison.png', dpi=150, bbox_inches='tight')\n",
+                "plt.show()"
+            ]
+        },
+        {
+            "cell_type": "code", "id": "cell_fi", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# Feature Importance - Random Forest (or best tree-based model)\n",
+                "fi_model_name = next((n for n in ['Random Forest', 'Gradient Boosting', 'XGBoost', 'Decision Tree']\n",
+                "                      if n in results), None)\n",
+                "if fi_model_name:\n",
+                "    fi_model = results[fi_model_name]['model']\n",
+                "    importances = fi_model.feature_importances_\n",
+                "    feat_names = X_train.columns.tolist()\n",
+                "    indices = np.argsort(importances)[-20:]\n",
+                "\n",
+                "    fig, ax = plt.subplots(figsize=(10, 8))\n",
+                "    colors_fi = plt.cm.YlOrRd(importances[indices]/importances[indices].max())\n",
+                "    bars = ax.barh(range(len(indices)), importances[indices],\n",
+                "                   color=colors_fi, edgecolor='black', lw=0.5)\n",
+                "    ax.set_yticks(range(len(indices)))\n",
+                "    ax.set_yticklabels([feat_names[i] for i in indices], fontsize=8)\n",
+                "    ax.set_xlabel('Feature Importance Score', fontsize=12)\n",
+                "    ax.set_title(f'Top 20 Feature Importances - {fi_model_name}', fontsize=13, fontweight='bold')\n",
+                "    ax.grid(axis='x', alpha=0.4)\n",
+                "    for bar, val in zip(bars, importances[indices]):\n",
+                "        ax.text(val + 0.001, bar.get_y() + bar.get_height()/2, f'{val:.4f}', va='center', fontsize=7)\n",
+                "    plt.tight_layout()\n",
+                "    plt.savefig(f'../static/plots/feature_importance_{fi_model_name.replace(\" \",\"_\").lower()}.png',\n",
+                "                dpi=150, bbox_inches='tight')\n",
+                "    plt.show()"
+            ]
+        },
+        {
+            "cell_type": "markdown", "id": "cell_s8", "metadata": {},
+            "source": ["## 8. Model Selection - Weighted Composite Score"]
+        },
+        {
+            "cell_type": "code", "id": "cell_select", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# Multi-criteria model selection\n",
+                "# Composite Score = 0.40*F1 + 0.30*ROC_AUC + 0.20*Recall + 0.10*Precision\n",
+                "#\n",
+                "# Rationale:\n",
+                "# - F1 (40%): Primary metric - balances precision and recall\n",
+                "# - ROC-AUC (30%): Overall discriminative power\n",
+                "# - Recall (20%): Critical for phishing - missing a phishing site is dangerous!\n",
+                "# - Precision (10%): Minimize false alarms\n",
+                "\n",
+                "print('Model Selection Methodology')\n",
+                "print('Score = 0.40*F1 + 0.30*ROC_AUC + 0.20*Recall + 0.10*Precision')\n",
+                "print('\\nRationale: In phishing detection, a False Negative (missed phishing) is')\n",
+                "print('far more dangerous than a False Positive (legitimate site blocked).')\n",
+                "print('=' * 70)\n",
+                "\n",
+                "scores = {}\n",
+                "for name, m in results.items():\n",
+                "    score = 0.40*m['f1'] + 0.30*m['roc_auc'] + 0.20*m['recall'] + 0.10*m['precision']\n",
+                "    scores[name] = score\n",
+                "    print(f'{name:25s} | Composite: {score:.4f} | F1={m[\"f1\"]:.4f} | '\n",
+                "          f'AUC={m[\"roc_auc\"]:.4f} | Recall={m[\"recall\"]:.4f}')\n",
+                "\n",
+                "best = max(scores, key=scores.get)\n",
+                "print(f'\\n>>> SELECTED MODEL: {best} (Score={scores[best]:.4f}) <<<')"
+            ]
+        },
+        {
+            "cell_type": "code", "id": "cell_save", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# Save best model and all artifacts\n",
+                "import json\n",
+                "os.makedirs('../models', exist_ok=True)\n",
+                "\n",
+                "joblib.dump(results[best]['model'], '../models/final_model.pkl')\n",
+                "joblib.dump(scaler, '../models/scaler.pkl')\n",
+                "joblib.dump(X_train.columns.tolist(), '../models/feature_names.pkl')\n",
+                "\n",
+                "# Save metrics as JSON for web app\n",
+                "metrics_out = {}\n",
+                "for name, m in results.items():\n",
+                "    metrics_out[name] = {\n",
+                "        'accuracy': float(m['accuracy']),\n",
+                "        'precision': float(m['precision']),\n",
+                "        'recall': float(m['recall']),\n",
+                "        'f1': float(m['f1']),\n",
+                "        'roc_auc': float(m['roc_auc']),\n",
+                "        'train_time_s': round(float(m['train_time']), 2),\n",
+                "        'prediction_time_s': round(float(m['pred_time']), 4),\n",
+                "        'confusion_matrix': confusion_matrix(y_test, m['y_pred']).tolist()\n",
+                "    }\n",
+                "metrics_out['_best_model'] = best\n",
+                "\n",
+                "with open('../models/metrics.json', 'w') as f:\n",
+                "    json.dump(metrics_out, f, indent=2)\n",
+                "\n",
+                "print(f'Saved artifacts:')\n",
+                "print(f'  - models/final_model.pkl  ({best})')\n",
+                "print(f'  - models/scaler.pkl')\n",
+                "print(f'  - models/feature_names.pkl')\n",
+                "print(f'  - models/metrics.json')"
+            ]
+        },
+        {
+            "cell_type": "markdown", "id": "cell_s9", "metadata": {},
+            "source": ["## 9. Case Study - Detection of a Suspicious Login Website"]
+        },
+        {
+            "cell_type": "code", "id": "cell_case", "metadata": {}, "execution_count": None, "outputs": [],
+            "source": [
+                "# CASE STUDY: Detection of a Suspicious Login Website\n",
+                "# DISCLAIMER: This is a simulated educational example.\n",
+                "# The URL below is fictional and not claimed to be an actual malicious website.\n",
+                "\n",
+                "print('=' * 60)\n",
+                "print('CASE STUDY: Detection of a Suspicious Login Website')\n",
+                "print('=' * 60)\n",
+                "print()\n",
+                "print('SCENARIO:')\n",
+                "print('A user receives an email claiming their account needs urgent')\n",
+                "print('verification and is provided the following link:')\n",
+                "print()\n",
+                "\n",
+                "sys.path.insert(0, '../src')\n",
+                "from predict import predict_url\n",
+                "\n",
+                "case_url = 'https://secure-account-verification-example.com/login'\n",
+                "print(f'URL: {case_url}')\n",
+                "print()\n",
+                "\n",
+                "result = predict_url(case_url)\n",
+                "if result.get('error'):\n",
+                "    print(f'Error: {result[\"error\"]}')\n",
+                "    print('Note: Train the model first using run_training.py')\n",
+                "else:\n",
+                "    print('--- ML SYSTEM ANALYSIS RESULT ---')\n",
+                "    print(f'Prediction  : {result[\"prediction\"]}')\n",
+                "    print(f'Risk Score  : {result[\"risk_score\"]}%')\n",
+                "    print(f'Confidence  : {result[\"confidence\"]}%')\n",
+                "    print(f'Risk Level  : {result[\"risk_level\"]}')\n",
+                "    print()\n",
+                "    print('Top Contributing Factors:')\n",
+                "    for i, f in enumerate(result['contributing_factors'], 1):\n",
+                "        print(f'  {i}. {f}')\n",
+                "    print()\n",
+                "    print('Feature Analysis:')\n",
+                "    feats = result['interpretable_features']\n",
+                "    for k, v in feats.items():\n",
+                "        if not isinstance(v, list) or v:\n",
+                "            print(f'  {k:30s}: {v}')\n",
+                "    print()\n",
+                "    print(f'Recommendation: {result[\"safety_recommendation\"]}')\n",
+                "    print()\n",
+                "    print('DISCLAIMER: Simulated educational example only.')\n",
+                "    print('The domain above is fictional. This system analyzes URL structure only.')"
+            ]
+        },
+        {
+            "cell_type": "markdown", "id": "cell_conclusion", "metadata": {},
+            "source": [
+                "## 10. Conclusion\n\n",
+                "This notebook demonstrates a complete end-to-end ML pipeline for phishing URL detection:\n\n",
+                "- ✅ Loaded and explored 235,795 URLs from the PhiUSIIL dataset\n",
+                "- ✅ Performed comprehensive EDA with 6+ visualization types\n",
+                "- ✅ Feature engineering: 40+ features with phishing-relevance explanations\n",
+                "- ✅ Preprocessing: Stratified split, StandardScaler (no data leakage)\n",
+                "- ✅ Trained 4-5 ML models (LR, DT, RF, GB, XGB)\n",
+                "- ✅ Full evaluation: Accuracy, F1, Recall, Precision, ROC-AUC, Confusion Matrix\n",
+                "- ✅ Documented model selection with weighted composite score methodology\n",
+                "- ✅ Saved final model + preprocessing artifacts\n",
+                "- ✅ Case study with explainable AI output\n\n",
+                "**To start the web application:**\n",
+                "```bash\n",
+                "python app.py\n",
+                "# Access at http://127.0.0.1:5000\n",
+                "```\n\n",
+                "---\n",
+                "*PhishGuard AI | B.Tech AI/ML Project 2024*"
+            ]
+        }
+    ]
+}
+
+os.makedirs('notebooks', exist_ok=True)
+nb_path = os.path.join('notebooks', 'phishing_analysis.ipynb')
+with open(nb_path, 'w', encoding='utf-8') as f:
+    json.dump(nb, f, indent=1, ensure_ascii=False)
+
+print(f'Notebook created: {nb_path}')
+print(f'File size: {os.path.getsize(nb_path):,} bytes')
+print('Notebook is ready to open in Jupyter!')

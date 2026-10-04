@@ -1,0 +1,124 @@
+{
+  "feature_names": [
+    "url_length",
+    "hostname_length",
+    "path_length",
+    "num_dots",
+    "num_hyphens",
+    "num_underscores",
+    "num_slashes",
+    "num_question_marks",
+    "num_equals",
+    "num_at",
+    "num_digits",
+    "num_special_chars",
+    "num_subdomains",
+    "has_https",
+    "has_ip",
+    "is_shortened",
+    "suspicious_keyword_count",
+    "has_suspicious_keywords",
+    "domain_entropy",
+    "has_suspicious_tld",
+    "digit_ratio",
+    "special_char_ratio"
+  ],
+  "num_features": 22,
+  "label_mapping": {
+    "0": "legitimate",
+    "1": "phishing"
+  },
+  "selected_model": "XGBoost",
+  "selection_metric": "f1_score",
+  "selection_rationale": "Automatically selected based on highest test F1-score with Recall priority. In phishing detection, minimizing False Negatives (maximizing Recall) is critical because missing an active phishing attack exposes users to credential theft.",
+  "feature_importances": [
+    {
+      "feature": "num_digits",
+      "importance": 0.36
+    },
+    {
+      "feature": "has_suspicious_tld",
+      "importance": 0.1923
+    },
+    {
+      "feature": "path_length",
+      "importance": 0.1431
+    },
+    {
+      "feature": "special_char_ratio",
+      "importance": 0.083
+    },
+    {
+      "feature": "num_slashes",
+      "importance": 0.0604
+    },
+    {
+      "feature": "is_shortened",
+      "importance": 0.0489
+    },
+    {
+      "feature": "num_subdomains",
+      "importance": 0.0149
+    },
+    {
+      "feature": "num_special_chars",
+      "importance": 0.0143
+    },
+    {
+      "feature": "suspicious_keyword_count",
+      "importance": 0.0135
+    },
+    {
+      "feature": "num_question_marks",
+      "importance": 0.0098
+    },
+    {
+      "feature": "hostname_length",
+      "importance": 0.0097
+    },
+    {
+      "feature": "has_https",
+      "importance": 0.0094
+    },
+    {
+      "feature": "domain_entropy",
+      "importance": 0.0094
+    },
+    {
+      "feature": "url_length",
+      "importance": 0.0084
+    },
+    {
+      "feature": "num_hyphens",
+      "importance": 0.0084
+    },
+    {
+      "feature": "num_dots",
+      "importance": 0.0078
+    },
+    {
+      "feature": "digit_ratio",
+      "importance": 0.0068
+    },
+    {
+      "feature": "num_underscores",
+      "importance": 0.0
+    },
+    {
+      "feature": "num_equals",
+      "importance": 0.0
+    },
+    {
+      "feature": "num_at",
+      "importance": 0.0
+    },
+    {
+      "feature": "has_ip",
+      "importance": 0.0
+    },
+    {
+      "feature": "has_suspicious_keywords",
+      "importance": 0.0
+    }
+  ]
+}
