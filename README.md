@@ -3,6 +3,9 @@
 **AI/ML Mini Project (Experiment 12)**  
 *Real-time URL threat intelligence, 22-feature lexical & entropy extraction, 5-model machine learning benchmark, Explainable AI (XAI), and persistent SQLite audit logging.*
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/jhaabhi680-sudo/phishguard-phishing-detection)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/jhaabhi680-sudo/phishguard-phishing-detection)
+
 ---
 
 ## 1. Project Overview & Problem Statement

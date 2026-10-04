@@ -1,14 +1,21 @@
 """
 backend/database.py
 SQLite + SQLAlchemy database engine and session management for PhishGuard.
+Supports local disk (Render / local dev) and /tmp fallback for read-only serverless environments (Vercel).
 """
 
 import os
+import tempfile
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BACKEND_DIR, "phishguard.db")
+
+if os.getenv("VERCEL") or not os.access(BACKEND_DIR, os.W_OK):
+    DB_PATH = os.path.join(tempfile.gettempdir(), "phishguard.db")
+else:
+    DB_PATH = os.path.join(BACKEND_DIR, "phishguard.db")
+
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DB_PATH}")
 
 engine = create_engine(

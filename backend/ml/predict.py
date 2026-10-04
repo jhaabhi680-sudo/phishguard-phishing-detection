@@ -47,13 +47,20 @@ def load_inference_artifacts():
 
     current_mtime = os.path.getmtime(MODEL_PATH)
     if _CACHE["model"] is None or _CACHE["mtime"] != current_mtime:
-        _CACHE["model"] = joblib.load(MODEL_PATH)
-        _CACHE["scaler"] = joblib.load(SCALER_PATH)
         if os.path.exists(METADATA_PATH):
             with open(METADATA_PATH, "r", encoding="utf-8") as f:
                 _CACHE["metadata"] = json.load(f)
         else:
             _CACHE["metadata"] = {"selected_model": "Random Forest", "feature_names": FEATURE_NAMES}
+
+        try:
+            _CACHE["model"] = joblib.load(MODEL_PATH)
+        except Exception:
+            rf_path = os.path.join(MODELS_DIR, "random_forest.joblib")
+            _CACHE["model"] = joblib.load(rf_path)
+            _CACHE["metadata"]["selected_model"] = "Random Forest"
+
+        _CACHE["scaler"] = joblib.load(SCALER_PATH)
         _CACHE["mtime"] = current_mtime
 
     return _CACHE["model"], _CACHE["scaler"], _CACHE["metadata"]

@@ -1,14 +1,20 @@
 """
 backend/main.py
 FastAPI entry point for PhishGuard — AI-Based Phishing URL Detection System.
+Serves both the REST API (/api/*) and the compiled React frontend (frontend/dist).
 """
 
 import os
 import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BACKEND_DIR)
+FRONTEND_DIST_DIR = os.path.join(PROJECT_ROOT, "frontend", "dist")
+
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
@@ -51,6 +57,8 @@ def seed_initial_history():
                 except Exception:
                     pass
             db.commit()
+    except Exception:
+        pass
     finally:
         db.close()
 
@@ -88,6 +96,18 @@ def health_check():
     }
 
 
+# Serve production React frontend if frontend/dist exists
+if os.path.isdir(FRONTEND_DIST_DIR):
+    src_dist = os.path.join(FRONTEND_DIST_DIR, "src")
+    if os.path.isdir(src_dist):
+        app.mount("/src", StaticFiles(directory=src_dist), name="frontend_src")
+
+    @app.get("/", include_in_schema=False)
+    def serve_frontend_index():
+        return FileResponse(os.path.join(FRONTEND_DIST_DIR, "index.html"))
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
